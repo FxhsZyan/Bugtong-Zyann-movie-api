@@ -35,22 +35,34 @@
     border-radius: 4px;
     font-size: 14px;
   }
-  form button {
+  button {
     padding: 10px 18px;
-    background: #eee;
-    border: 1px solid #ccc;
+    border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
   }
-  form button:hover { background: #e0e0e0; }
+  button:active { transform: translateY(1px); }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+  }
+  form button {
+    background: #2d6cdf;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  form button:hover:not(:disabled) { background: #2559b8; }
   #status {
     margin-top: 12px;
     font-weight: bold;
     min-height: 20px;
   }
   #status.error { color: #c0392b; }
-  #status.success { color: #222; }
+  #status.success { color: #1e7e34; }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -62,7 +74,21 @@
     border: 1px solid #ddd;
   }
   th { background: #eee; }
-  #loadBtn { margin-top: 16px; }
+  tbody tr:hover { background: #fafafa; }
+  td.empty-state {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    padding: 20px;
+  }
+  #loadBtn {
+    margin-top: 16px;
+    background: #eee;
+    color: #222;
+    border: 1px solid #ccc;
+  }
+  #loadBtn:hover:not(:disabled) { background: #e0e0e0; }
+  #loadBtn.loading { background: #ddd; }
 </style>
 </head>
 <body>
@@ -90,7 +116,9 @@
         <th>Year</th>
       </tr>
     </thead>
-    <tbody id="movieTableBody"></tbody>
+    <tbody id="movieTableBody">
+      <tr><td class="empty-state" colspan="4">Click "Load Movies" to fetch the list.</td></tr>
+    </tbody>
   </table>
 </div>
 
@@ -103,24 +131,37 @@
   const loadBtn = document.getElementById('loadBtn');
 
   async function loadMovies() {
+    loadBtn.disabled = true;
+    loadBtn.classList.add('loading');
+    loadBtn.textContent = 'Loading...';
+
     try {
       const res = await fetch(API_URL);
       const movies = await res.json();
 
       tableBody.innerHTML = '';
-      movies.forEach((movie) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${movie.id}</td>
-          <td>${movie.title}</td>
-          <td>${movie.genre}</td>
-          <td>${movie.year}</td>
-        `;
-        tableBody.appendChild(row);
-      });
+
+      if (movies.length === 0) {
+        tableBody.innerHTML = '<tr><td class="empty-state" colspan="4">No movies yet.</td></tr>';
+      } else {
+        movies.forEach((movie) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${movie.id}</td>
+            <td>${movie.title}</td>
+            <td>${movie.genre}</td>
+            <td>${movie.year}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      }
     } catch (err) {
       statusEl.textContent = 'Failed to load movies.';
       statusEl.className = 'error';
+    } finally {
+      loadBtn.disabled = false;
+      loadBtn.classList.remove('loading');
+      loadBtn.textContent = 'Load Movies';
     }
   }
 
@@ -157,9 +198,6 @@
   });
 
   loadBtn.addEventListener('click', loadMovies);
-
-  // Load the list automatically on page load
-  loadMovies();
 </script>
 </body>
 </html>
