@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Collection</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 40px 20px;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 32px 40px 48px;
+    border-radius: 8px;
+  }
+  h1 { text-align: center; }
+  h2 { margin-top: 36px; }
+  form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  form input {
+    flex: 1;
+    min-width: 140px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  form button {
+    padding: 10px 18px;
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  form button:hover { background: #e0e0e0; }
+  #status {
+    margin-top: 12px;
+    font-weight: bold;
+    min-height: 20px;
+  }
+  #status.error { color: #c0392b; }
+  #status.success { color: #222; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+  }
+  th, td {
+    text-align: left;
+    padding: 12px;
+    border: 1px solid #ddd;
+  }
+  th { background: #eee; }
+  #loadBtn { margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Movie Collection</h1>
+
+  <h2>Add Movie</h2>
+  <form id="addMovieForm">
+    <input type="text" id="title" placeholder="Title" required>
+    <input type="text" id="genre" placeholder="Genre" required>
+    <input type="number" id="year" placeholder="Year" required>
+    <button type="submit">Add Movie</button>
+  </form>
+  <p id="status"></p>
+
+  <h2>Movies</h2>
+  <button id="loadBtn">Load Movies</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Genre</th>
+        <th>Year</th>
+      </tr>
+    </thead>
+    <tbody id="movieTableBody"></tbody>
+  </table>
+</div>
+
+<script>
+  const API_URL = '/api/movies';
+
+  const form = document.getElementById('addMovieForm');
+  const statusEl = document.getElementById('status');
+  const tableBody = document.getElementById('movieTableBody');
+  const loadBtn = document.getElementById('loadBtn');
+
+  async function loadMovies() {
+    try {
+      const res = await fetch(API_URL);
+      const movies = await res.json();
+
+      tableBody.innerHTML = '';
+      movies.forEach((movie) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${movie.id}</td>
+          <td>${movie.title}</td>
+          <td>${movie.genre}</td>
+          <td>${movie.year}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    } catch (err) {
+      statusEl.textContent = 'Failed to load movies.';
+      statusEl.className = 'error';
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById('title').value.trim();
+    const genre = document.getElementById('genre').value.trim();
+    const year = document.getElementById('year').value.trim();
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, genre, year }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        statusEl.textContent = data.error || 'Something went wrong.';
+        statusEl.className = 'error';
+        return;
+      }
+
+      statusEl.textContent = 'Movie added successfully';
+      statusEl.className = 'success';
+      form.reset();
+      loadMovies(); // refresh the list after adding
+    } catch (err) {
+      statusEl.textContent = 'Failed to add movie.';
+      statusEl.className = 'error';
+    }
+  });
+
+  loadBtn.addEventListener('click', loadMovies);
+
+  // Load the list automatically on page load
+  loadMovies();
+</script>
+</body>
+</html>
